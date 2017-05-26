@@ -335,7 +335,9 @@ public class BTNavigationDropdownMenu: UIView {
         self.menuTitle.textColor = self.configuration.menuTitleColor
         self.menuArrow.sizeToFit()
         self.menuArrow.center = CGPointMake(CGRectGetMaxX(self.menuTitle.frame) + self.configuration.arrowPadding, self.frame.size.height/2)
-        self.menuWrapper.frame.origin.y = self.navigationController!.navigationBar.frame.maxY
+        if let navigationController = self.navigationController {
+            self.menuWrapper.frame.origin.y = navigationController.navigationBar.frame.maxY
+        }
         self.tableView.reloadData()
     }
     
