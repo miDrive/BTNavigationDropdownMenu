@@ -8,14 +8,15 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, BTNavigationDropdownDelegate {
 
     @IBOutlet weak var selectedCellLabel: UILabel!
     var menuView: BTNavigationDropdownMenu!
-    
+
+    let items = ["Most Popular", "Latest", "Trending", "Nearest", "Top Picks"]
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        let items = ["Most Popular", "Latest", "Trending", "Nearest", "Top Picks"]
         self.selectedCellLabel.text = items.first
         self.navigationController?.navigationBar.isTranslucent = false
         self.navigationController?.navigationBar.barTintColor = UIColor(red: 0.0/255.0, green:180/255.0, blue:220/255.0, alpha: 1.0)
@@ -35,10 +36,25 @@ class ViewController: UIViewController {
         menuView.maskBackgroundOpacity = 0.3
         menuView.didSelectItemAtIndexHandler = {(indexPath: Int) -> () in
             print("Did select item at index: \(indexPath)")
-            self.selectedCellLabel.text = items[indexPath]
+            self.selectedCellLabel.text = self.items[indexPath]
         }
         
         self.navigationItem.titleView = menuView
+
+        perform(#selector(self.update), with: nil, afterDelay: 2)
+    }
+
+    func update() {
+        menuView.updateItems(["Most Popular", "Latest", "Trending", "Nearest"] as [AnyObject], animated: true)
+    }
+
+    func dropdownTableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        var cell: UITableViewCell? = tableView.dequeueReusableCell(withIdentifier: "cell")
+        if cell == nil {
+            cell = UITableViewCell(style: .default, reuseIdentifier: "cell")
+        }
+        cell?.textLabel?.text = items[indexPath.row]
+        cell?.imageView?.image = UIImage(named: "ic_video")
+        return cell!
     }
 }
-
