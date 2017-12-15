@@ -232,17 +232,20 @@ open class BTNavigationDropdownMenu: UIView {
     public var didSelectItemAtIndexHandler: ((_ indexPath: Int) -> ())?
     public var isShown: Bool!
 
-    private weak var navigationController: UINavigationController?
-    private var configuration = BTConfiguration()
-    private var topSeparator: UIView!
-    private var menuButton: UIButton!
-    private var menuTitle: UILabel!
-    private var menuArrow: UIImageView!
-    private var backgroundView: UIView!
-    private var tableView: BTTableView!
-    private var items: [AnyObject]!
-    private var menuWrapper: UIView!
-    
+    open var didSelectItemAtIndexHandler: ((_ indexPath: Int) -> ())?
+    open var isShown: Bool!
+
+    fileprivate weak var navigationController: UINavigationController?
+    fileprivate var configuration = BTConfiguration()
+    fileprivate var topSeparator: UIView!
+    fileprivate var menuButton: UIButton!
+    fileprivate var menuTitle: UILabel!
+    fileprivate var menuArrow: UIImageView!
+    fileprivate var backgroundView: UIView!
+    fileprivate var tableView: BTTableView!
+    fileprivate var items: [AnyObject]!
+    fileprivate var menuWrapper: UIView!
+
     required public init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -266,7 +269,7 @@ open class BTNavigationDropdownMenu: UIView {
         
         // Set frame
         let frame = CGRect(x: 0, y: 0, width: titleSize.width + (self.configuration.arrowPadding + self.configuration.arrowImage.size.width)*2, height: self.navigationController!.navigationBar.frame.height)
-        
+
         super.init(frame:frame)
 
         self.isShown = false
@@ -283,7 +286,7 @@ open class BTNavigationDropdownMenu: UIView {
         self.menuTitle.font = self.configuration.navigationBarTitleFont
         self.menuTitle.textAlignment = self.configuration.cellTextLabelAlignment
         self.menuButton.addSubview(self.menuTitle)
-        
+
         self.menuArrow = UIImageView(image: self.configuration.arrowImage.withRenderingMode(.alwaysTemplate))
         self.menuButton.addSubview(self.menuArrow)
 
@@ -293,12 +296,12 @@ open class BTNavigationDropdownMenu: UIView {
         self.menuWrapper = UIView(frame: CGRect(x: menuWrapperBounds.origin.x, y: 0, width: menuWrapperBounds.width, height: menuWrapperBounds.height))
         self.menuWrapper.clipsToBounds = true
         self.menuWrapper.autoresizingMask = [ .flexibleWidth, .flexibleHeight ]
-        
+
         // Init background view (under table view)
         self.backgroundView = UIView(frame: menuWrapperBounds)
         self.backgroundView.backgroundColor = self.configuration.maskBackgroundColor
         self.backgroundView.autoresizingMask = [ .flexibleWidth, .flexibleHeight ]
-        
+
         let backgroundTapRecognizer = UITapGestureRecognizer(target: self, action: #selector(BTNavigationDropdownMenu.hideMenu));
         self.backgroundView.addGestureRecognizer(backgroundTapRecognizer)
 
@@ -308,8 +311,9 @@ open class BTNavigationDropdownMenu: UIView {
         // Init table view
         let navBarHeight = self.navigationController?.navigationBar.bounds.size.height ?? 0
         let statusBarHeight = UIApplication.shared.statusBarFrame.height
-        self.tableView = BTTableView(frame: CGRect(x: menuWrapperBounds.origin.x, y: menuWrapperBounds.origin.y + 0.5, width: menuWrapperBounds.width, height: menuWrapperBounds.height + 300 - navBarHeight - statusBarHeight), items: items, title: title, configuration: self.configuration)
-        
+        self.tableView = BTTableView(frame: CGRect(x: menuWrapperBounds.origin.x, y: menuWrapperBounds.origin.y + 0.5, width: menuWrapperBounds.width, height: menuWrapperBounds.height + 300 - navBarHeight - statusBarHeight), items: items, title: title, configuration: self.configuration, tableDelegate: self)
+        self.tableView.menuDelegate = menuDelegate
+
         self.tableView.selectRowAtIndexPathHandler = { [weak self] (indexPath: Int) -> () in
             guard let selfie = self else {
                 return
@@ -344,8 +348,8 @@ open class BTNavigationDropdownMenu: UIView {
         self.menuTitle.textColor = self.configuration.menuTitleColor
         self.menuArrow.sizeToFit()
         self.menuArrow.center = CGPoint(x: self.menuTitle.frame.maxX + self.configuration.arrowPadding, y: self.frame.size.height/2)
-        if let navigationController = self.navigationController {
-            self.menuWrapper.frame.origin.y = navigationController.navigationBar.frame.maxY
+        if let navController = navigationController {
+            self.menuWrapper.frame.origin.y = navController.navigationBar.frame.maxY
         }
         self.tableView.reloadData()
     }
@@ -412,7 +416,7 @@ open class BTNavigationDropdownMenu: UIView {
 
         // Visible menu view
         self.menuWrapper.isHidden = false
-        
+
         // Change background alpha
         self.backgroundView.alpha = 0
 
@@ -421,9 +425,9 @@ open class BTNavigationDropdownMenu: UIView {
 
         // Reload data to dismiss highlight color of selected cell
         self.tableView.reloadData()
-        
+
         self.menuWrapper.superview?.bringSubview(toFront: self.menuWrapper)
-        
+
         UIView.animate(
             withDuration: self.configuration.animationDuration * 1.5,
             delay: 0,
@@ -442,7 +446,7 @@ open class BTNavigationDropdownMenu: UIView {
 
         // Change background alpha
         self.backgroundView.alpha = self.configuration.maskBackgroundOpacity
-        
+
         UIView.animate(
             withDuration: self.configuration.animationDuration * 1.5,
             delay: 0,
@@ -469,7 +473,7 @@ open class BTNavigationDropdownMenu: UIView {
     func rotateArrow() {
         UIView.animate(withDuration: self.configuration.animationDuration, animations: {[weak self] () -> () in
             if let selfie = self {
-                selfie.menuArrow.transform = selfie.menuArrow.transform.rotated(by: 180 * .pi / 180)//CGAffineTransformRotate(selfie.menuArrow.transform, 180 * CGFloat(M_PI/180))
+                selfie.menuArrow.transform = selfie.menuArrow.transform.rotated(by: 180 * (.pi/180))
             }
         })
     }
@@ -554,18 +558,20 @@ class BTTableView: UITableView, UITableViewDelegate, UITableViewDataSource, UIGe
     // Public properties
     var configuration: BTConfiguration!
     var selectRowAtIndexPathHandler: ((_ indexPath: Int) -> ())?
-    
+    var menuDelegate: BTNavigationDropdownDelegate!
+    private var tableDelegate: BTTableViewDelegate!
+
     // Private properties
-    var items: [AnyObject]!
-    private var selectedIndexPath: Int?
-    
+    fileprivate var items: [AnyObject]!
+    fileprivate var selectedIndexPath: Int?
+
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    init(frame: CGRect, items: [AnyObject], title: String, configuration: BTConfiguration) {
+
+    fileprivate init(frame: CGRect, items: [AnyObject], title: String, configuration: BTConfiguration, tableDelegate: BTTableViewDelegate?) {
         super.init(frame: frame, style: UITableViewStyle.plain)
-        
+
         self.items = items
         self.selectedIndexPath = (items as! [String]).index(of: title)
         self.configuration = configuration
@@ -578,14 +584,18 @@ class BTTableView: UITableView, UITableViewDelegate, UITableViewDataSource, UIGe
         self.separatorStyle = UITableViewCellSeparatorStyle.none
         //        self.separatorEffect = UIBlurEffect(style: .Light)
         self.autoresizingMask = UIViewAutoresizing.flexibleWidth
-        self.tableFooterView = UIView(frame: .zero)
+        self.tableFooterView = UIView(frame: CGRect.zero)
+
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(tappedOnView(_:)))
+        tapGesture.cancelsTouchesInView = false
+        tapGesture.delegate = self
+        self.addGestureRecognizer(tapGesture)
     }
 
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if let hitView = super.hitTest(point, with: event), hitView.isKind(of: BTTableCellContentView.self) {
-            return hitView
+    func tappedOnView(_ sender: AnyObject) {
+        if let tableDelegate = tableDelegate {
+            tableDelegate.tableViewDidTapOnBackground()
         }
-        return nil
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
@@ -608,7 +618,7 @@ class BTTableView: UITableView, UITableViewDelegate, UITableViewDataSource, UIGe
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
-    
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return self.items.count
     }
@@ -618,6 +628,10 @@ class BTTableView: UITableView, UITableViewDelegate, UITableViewDataSource, UIGe
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        if let delegate = self.menuDelegate {
+            return delegate.dropdownTableView(tableView, cellForRowAt: indexPath)
+        }
+
         let cell = BTTableViewCell(style: UITableViewCellStyle.default, reuseIdentifier: "Cell", configuration: self.configuration)
         cell.textLabel?.text = self.items[indexPath.row] as? String
         cell.checkmarkIcon.isHidden = (indexPath.row == selectedIndexPath) ? false : true
@@ -630,13 +644,13 @@ class BTTableView: UITableView, UITableViewDelegate, UITableViewDataSource, UIGe
         selectedIndexPath = indexPath.row
         self.selectRowAtIndexPathHandler!(indexPath.row)
         self.reloadData()
-        let cell = tableView.cellForRow(at: indexPath as IndexPath) as? BTTableViewCell
+        let cell = tableView.cellForRow(at: indexPath) as? BTTableViewCell
         cell?.contentView.backgroundColor = self.configuration.cellSelectionColor
         cell?.textLabel?.textColor = self.configuration.selectedCellTextLabelColor
     }
 
     func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-        let cell = tableView.cellForRow(at: indexPath as IndexPath) as? BTTableViewCell
+        let cell = tableView.cellForRow(at: indexPath) as? BTTableViewCell
         cell?.checkmarkIcon.isHidden = true
         cell?.contentView.backgroundColor = self.configuration.cellBackgroundColor
         cell?.textLabel?.textColor = self.configuration.cellTextLabelColor
@@ -714,7 +728,7 @@ class BTTableViewCell: UITableViewCell {
 // Content view of table view cell
 class BTTableCellContentView: UIView {
     var separatorColor: UIColor = UIColor.black
-    
+
     override init(frame: CGRect) {
         super.init(frame: frame)
 
@@ -730,17 +744,17 @@ class BTTableCellContentView: UIView {
     func initialize() {
         self.backgroundColor = UIColor.clear
     }
-    
+
     override func draw(_ rect: CGRect) {
         super.draw(rect)
         let context = UIGraphicsGetCurrentContext()
 
         // Set separator color of dropdown menu based on barStyle
-        context!.setStrokeColor(self.separatorColor.cgColor)
-        context!.setLineWidth(1)
-        context!.move(to: CGPoint(x: 0, y: self.bounds.size.height))
-        context!.addLine(to: CGPoint(x: self.bounds.size.width, y: self.bounds.size.height))
-        context!.strokePath()
+        context?.setStrokeColor(self.separatorColor.cgColor)
+        context?.setLineWidth(1)
+        context?.move(to: CGPoint(x: 0, y: self.bounds.size.height))
+        context?.addLine(to: CGPoint(x: self.bounds.size.width, y: self.bounds.size.height))
+        context?.strokePath()
     }
 }
 

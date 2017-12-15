@@ -22,7 +22,7 @@ class ViewController: UIViewController, BTNavigationDropdownDelegate {
         self.navigationController?.navigationBar.barTintColor = UIColor(red: 0.0/255.0, green:180/255.0, blue:220/255.0, alpha: 1.0)
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedStringKey.foregroundColor: UIColor.white]
         
-        menuView = BTNavigationDropdownMenu(navigationController: self.navigationController, containerView: self.navigationController!.view, title: "Dropdown Menu", items: items as [AnyObject])
+        menuView = BTNavigationDropdownMenu(navigationController: self.navigationController, containerView: self.navigationController!.view, title: "Dropdown Menu", items: items as [AnyObject], menuDelegate: self)
         menuView.cellHeight = 50
         menuView.cellBackgroundColor = self.navigationController?.navigationBar.barTintColor
         menuView.cellSelectionColor = UIColor(red: 0.0/255.0, green:160.0/255.0, blue:195.0/255.0, alpha: 1.0)
@@ -44,7 +44,7 @@ class ViewController: UIViewController, BTNavigationDropdownDelegate {
         perform(#selector(self.update), with: nil, afterDelay: 2)
     }
 
-    func update() {
+    @objc func update() {
         menuView.updateItems(["Most Popular", "Latest", "Trending", "Nearest"] as [AnyObject], animated: true)
     }
 
