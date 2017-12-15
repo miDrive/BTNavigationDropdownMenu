@@ -232,9 +232,6 @@ open class BTNavigationDropdownMenu: UIView {
     public var didSelectItemAtIndexHandler: ((_ indexPath: Int) -> ())?
     public var isShown: Bool!
 
-    open var didSelectItemAtIndexHandler: ((_ indexPath: Int) -> ())?
-    open var isShown: Bool!
-
     fileprivate weak var navigationController: UINavigationController?
     fileprivate var configuration = BTConfiguration()
     fileprivate var topSeparator: UIView!
@@ -250,7 +247,7 @@ open class BTNavigationDropdownMenu: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    public init(navigationController: UINavigationController? = nil, containerView: UIView = UIApplication.shared.keyWindow!, title: String, items: [AnyObject]) {
+    public init(navigationController: UINavigationController? = nil, containerView: UIView = UIApplication.shared.keyWindow!, title: String, items: [AnyObject], menuDelegate: BTNavigationDropdownDelegate? = nil) {
         // Key window
         guard let window = UIApplication.shared.keyWindow else {
             super.init(frame: .zero)
@@ -320,7 +317,7 @@ open class BTNavigationDropdownMenu: UIView {
             }
             selfie.didSelectItemAtIndexHandler!(indexPath)
             if selfie.shouldChangeTitleText! {
-                selfie.setMenuTitle(title: "\(selfie.tableView.items[indexPath])")
+                selfie.setMenuTitle("\(selfie.tableView.items[indexPath])")
             }
             self?.hideMenu()
             self?.layoutSubviews()
@@ -592,7 +589,7 @@ class BTTableView: UITableView, UITableViewDelegate, UITableViewDataSource, UIGe
         self.addGestureRecognizer(tapGesture)
     }
 
-    func tappedOnView(_ sender: AnyObject) {
+    @objc func tappedOnView(_ sender: AnyObject) {
         if let tableDelegate = tableDelegate {
             tableDelegate.tableViewDidTapOnBackground()
         }
